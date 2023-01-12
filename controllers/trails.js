@@ -32,16 +32,22 @@ exports.getTrails = async (req, res, next) => {
   for (const trail of trails) {
     trail.imageURLs = [];
     trail.images.forEach((image) => {
-        const imageUrl = `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
-        
+      const imageUrl = `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
     });
-
   }
 
   res.status(201).json({ message: "Trails Fetched!", trails: trails });
 };
 
-// SIGNS UP USER WITH VALIDATED USERINPUT
+// FETCHES SINGLE TRAIL FOR TRAIL DETAIL PAGE
+exports.getTrailDetail = async (req, res, next) => {
+  const trailId = req.params.trailId;
+  const trail = await Trail.findById(trailId);
+
+  res.status(201).json({ message: "Trail found", trail: trail });
+};
+
+// ADDS A NEW TRAIL
 exports.putAddTrail = (req, res, next) => {
   console.log("Trail submission received!");
   const images = req.files;
@@ -75,39 +81,43 @@ exports.putAddTrail = (req, res, next) => {
     const command = new PutObjectCommand(params);
     s3.send(command);
   });
-    
-    const imageUrls = imageNameArray.map(image => {
-        return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
-    })
 
-  const name = req.body.name;
+  const imageUrls = imageNameArray.map((image) => {
+    return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
+  });
+    
+  const seasonArray = [+req.body.seasonStart, +req.body.seasonEnd];
+
+  const trailName = req.body.trailName;
   const state = req.body.state;
   const wildernessArea = req.body.wildernessArea;
   const trailheadName = req.body.trailheadName;
-  const seasonStart = req.body.seasonStart;
-  const seasonEnd = req.body.seasonStart;
+  const bestSeason = seasonArray
   const longitude = req.body.longitude;
   const latitude = req.body.latitude;
   const miles = req.body.miles;
   const scenery = req.body.scenery;
   const solitude = req.body.solitude;
   const difficulty = req.body.difficulty;
-  const description = req.body.description;
+    const description = req.body.description;
+    const author = req.body.author;
+    const authorId = req.body.authorId;
 
   const trail = new Trail({
-    name,
+    trailName,
     state,
     wildernessArea,
     trailheadName,
-    seasonStart,
-    seasonEnd,
+    bestSeason,
     longitude,
     latitude,
     miles,
     scenery,
     solitude,
     difficulty,
-    description,
+      description,
+      author,
+    authorId,
     images: imageUrls,
   });
   trail

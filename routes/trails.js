@@ -8,11 +8,13 @@ const router = express.Router();
 
 router.get("/trails", trailsController.getTrails);
 
+router.get("/trail-detail/:trailId", trailsController.getTrailDetail);
+
 router.put(
   "/submit-trail",
   [
-    body("name").custom((value, { req }) => {
-      return Trail.findOne({ name: value }).then((userDoc) => {
+    body("trailName").custom((value, { req }) => {
+      return Trail.findOne({ trailName: value }).then((userDoc) => {
         if (userDoc) {
           return Promise.reject("Trail name already exists!");
         }
@@ -20,8 +22,6 @@ router.put(
     }),
     body("state").trim().not().isEmpty(),
     body("wildernessArea").trim().not().isEmpty(),
-    body("seasonStart").trim().isLength({ min: 1 }),
-    body("seasonEnd").trim().isLength({ min: 1 }),
     body("longitude").trim().isLength({ min: 1 }),
     body("latitude").trim().isLength({ min: 1 }),
     body("miles").trim().isLength({ min: 1 }),

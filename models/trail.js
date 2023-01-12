@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const trailSchema = new Schema({
-  name: {
+  trailName: {
     type: String,
     required: true,
   },
@@ -18,14 +18,12 @@ const trailSchema = new Schema({
     type: String,
     required: false,
   },
-  seasonStart: {
-    type: Number,
-    required: true,
-  },
-  seasonEnd: {
-    type: Number,
-    required: true,
-  },
+  bestSeason: [
+    {
+      type: Number,
+      required: true,
+    },
+  ],
   longitude: {
     type: Number,
     required: true,
@@ -51,6 +49,14 @@ const trailSchema = new Schema({
     required: true,
   },
   description: {
+    type: String,
+    required: true,
+  },
+  author: {
+    type: String,
+    required: true,
+  },
+  authorId: {
     type: String,
     required: true,
   },

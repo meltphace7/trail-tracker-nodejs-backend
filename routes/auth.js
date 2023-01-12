@@ -28,6 +28,9 @@ router.put(
 
 router.post("/login", authController.login);
 
+router.put("/update-auth", isAuth, authController.putUpdateAuth);
+
+router.post("/fetch-auth", isAuth, authController.postFetchAuth);
 
 // router.post("/clear-cart", isAuth, authController.postClearCart);
 

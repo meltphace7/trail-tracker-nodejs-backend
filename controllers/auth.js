@@ -9,6 +9,7 @@ const dotenv = require("dotenv");
 dotenv.config({ path: "./vars/.env" });
 
 const User = require("../models/user");
+const Trail = require("../models/trail");
 
 // const sendGridKey = process.env.SENDGRID_KEY;
 // const transporter = nodemailer.createTransport(
@@ -30,6 +31,7 @@ exports.signup = (req, res, next) => {
     throw error;
   }
 
+    const userName = req.body.userName;
   const firstName = req.body.firstName;
   const lastName = req.body.lastName;
   const email = req.body.email;
@@ -37,7 +39,8 @@ exports.signup = (req, res, next) => {
   bcrypt
     .hash(password, 12)
     .then((hashedPw) => {
-      const user = new User({
+        const user = new User({
+        userName: userName,
         email: email,
         password: hashedPw,
         firstName: firstName,
@@ -95,8 +98,9 @@ exports.login = (req, res, next) => {
         res.status(200).json({
           token: token,
           userId: loadedUser._id.toString(),
-          userName: loadedUser.firstName,
+          userName: loadedUser.userName,
           isAdmin: true,
+          favorites: loadedUser.favorites,
         });
       } else {
         //IF PASSWORD VALID, TOKEN CREATED WITH JWT
@@ -112,7 +116,8 @@ exports.login = (req, res, next) => {
         res.status(200).json({
           token: token,
           userId: loadedUser._id.toString(),
-          userName: loadedUser.firstName,
+          userName: loadedUser.userName,
+          favorites: loadedUser.favorites,
         });
       }
     })
@@ -122,6 +127,47 @@ exports.login = (req, res, next) => {
         err.statusCode = 500;
       }
       next(err);
+    });
+};
+
+// GETS AUTH DATA FROM USER IF TOKEN DETECTED IN THEIR LOCAL STORAGE
+exports.postFetchAuth = (req, res, next) => {
+  const userId = req.userId;
+  let isAdmin = false;
+  if (req.isAdmin) {
+    isAdmin = true;
+  }
+  User.findById(userId)
+    .then((user) => {
+        const favorites = user.favorites;
+        const userName = user.userName
+
+      res.status(200).json({ message: "User Found!", favorites: favorites, userName: userName });
+    })
+    .catch((err) => {});
+};
+
+// UPDATES THE USERS CART IN THE DB
+exports.putUpdateAuth = (req, res, next) => {
+  const userId = req.userId;
+  const sentFavorites = req.body.favorites;
+
+  // Push these objects into the USer cart
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        const error = new Error("Could not find User!");
+        error.status = 400;
+        throw error;
+      }
+      user.favorites = sentFavorites;
+      return user.save();
+    })
+    .then((result) => {
+      res.status(200).json({ message: "Favorites updated!" });
+    })
+    .catch((err) => {
+      console.log(err);
     });
 };
 
