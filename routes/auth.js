@@ -32,6 +32,10 @@ router.put("/update-auth", isAuth, authController.putUpdateAuth);
 
 router.post("/fetch-auth", isAuth, authController.postFetchAuth);
 
+router.post("/fetch-user-trails", isAuth, authController.postFetchUserTrails);
+
+router.post("/delete-trail", isAuth, authController.postDeleteTrail);
+
 // router.post("/clear-cart", isAuth, authController.postClearCart);
 
 // router.post("/get-account", isAuth, authController.postGetAccount);

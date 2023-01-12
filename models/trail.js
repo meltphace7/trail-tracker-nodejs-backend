@@ -57,7 +57,8 @@ const trailSchema = new Schema({
     required: true,
   },
   authorId: {
-    type: String,
+    type: Schema.Types.ObjectId,
+    ref: "User",
     required: true,
   },
   images: [

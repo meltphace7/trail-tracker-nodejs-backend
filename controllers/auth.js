@@ -1,15 +1,33 @@
 const { validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
-// const nodemailer = require("nodemailer");
-// const sendGridTransport = require("nodemailer-sendgrid-transport");
+const {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} = require("@aws-sdk/client-s3");
+
 const dotenv = require("dotenv");
 
 dotenv.config({ path: "./vars/.env" });
 
 const User = require("../models/user");
 const Trail = require("../models/trail");
+
+const bucketName = process.env.BUCKET_NAME;
+const bucketRegion = process.env.BUCKET_REGION;
+const accessKey = process.env.ACCESS_KEY;
+const secretAccessKey = process.env.SECRET_ACCESS_KEY;
+
+// CONFIGURES s3 object so the image can be stored
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: accessKey,
+    secretAccessKey: secretAccessKey,
+  },
+  region: bucketRegion,
+});
 
 // const sendGridKey = process.env.SENDGRID_KEY;
 // const transporter = nodemailer.createTransport(
@@ -31,7 +49,7 @@ exports.signup = (req, res, next) => {
     throw error;
   }
 
-    const userName = req.body.userName;
+  const userName = req.body.userName;
   const firstName = req.body.firstName;
   const lastName = req.body.lastName;
   const email = req.body.email;
@@ -39,7 +57,7 @@ exports.signup = (req, res, next) => {
   bcrypt
     .hash(password, 12)
     .then((hashedPw) => {
-        const user = new User({
+      const user = new User({
         userName: userName,
         email: email,
         password: hashedPw,
@@ -139,10 +157,16 @@ exports.postFetchAuth = (req, res, next) => {
   }
   User.findById(userId)
     .then((user) => {
-        const favorites = user.favorites;
-        const userName = user.userName
+      const favorites = user.favorites;
+      const userName = user.userName;
 
-      res.status(200).json({ message: "User Found!", favorites: favorites, userName: userName });
+      res
+        .status(200)
+        .json({
+          message: "User Found!",
+          favorites: favorites,
+          userName: userName,
+        });
     })
     .catch((err) => {});
 };
@@ -170,6 +194,47 @@ exports.putUpdateAuth = (req, res, next) => {
       console.log(err);
     });
 };
+
+exports.postFetchUserTrails = (req, res, next) => {
+  console.log("User Submitted Trails");
+  const userId = req.userId;
+    User.findById(userId)
+        .populate('submittedTrails')
+        .exec((err, user) => {
+            res.status(200).json({ submittedTrails: user.submittedTrails});
+         })
+};
+
+exports.postDeleteTrail = (req, res, next) => {
+  const userId = req.userId;
+  const trailId = req.body.trailId;
+  const trailImageArray = req.body.trailImages;
+
+  // DELETES IMAGE FROM s3 BUCKET
+    trailImageArray.forEach(imageUrl => {
+       
+        const imageName = imageUrl.slice(62);
+        const deleteImage = async () => {
+          const params = {
+            Bucket: bucketName,
+            Key: imageName,
+          };
+          const command = new DeleteObjectCommand(params);
+          await s3.send(command);
+        };
+        deleteImage();
+    })
+    
+  // DELETES PRODUCT FROM MONGO
+  Trail.findByIdAndRemove(trailId)
+    .then((result) => {
+      console.log(result);
+      res.status(200).json({ message: "Trail Deleted!" });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+}
 
 // // GETS ACCOUNT DATA FOR LOGGED IN USER
 // exports.postGetAccount = (req, res, next) => {

@@ -22,12 +22,13 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
-  // favorites: [
-  //   {
-  //     type: String,
-  //     required: true
-  //   }
-  // ],
+  submittedTrails: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Trail",
+      required: true,
+    },
+  ],
   favorites: [
     {
       trailId: {
