@@ -27,7 +27,7 @@ const s3 = new S3Client({
   region: bucketRegion,
 });
 
-// FETCHES ALL TRAILS
+////// FETCHES ALL TRAILS /////////////
 exports.getTrails = async (req, res, next) => {
   const trails = await Trail.find();
   // Loop through products and create a imageURL based on the imageName
@@ -41,7 +41,7 @@ exports.getTrails = async (req, res, next) => {
   res.status(201).json({ message: "Trails Fetched!", trails: trails });
 };
 
-// FETCHES SINGLE TRAIL FOR TRAIL DETAIL PAGE
+////// FETCHES SINGLE TRAIL FOR TRAIL DETAIL PAGE ////////
 exports.getTrailDetail = async (req, res, next) => {
   const trailId = req.params.trailId;
   const trail = await Trail.findById(trailId);
@@ -49,12 +49,11 @@ exports.getTrailDetail = async (req, res, next) => {
   res.status(201).json({ message: "Trail found", trail: trail });
 };
 
-// ADDS A NEW TRAIL
+////// ADDS A NEW TRAIL /////////////////////
 exports.putAddTrail = (req, res, next) => {
   console.log("Trail submission received!");
   const images = req.files;
   const userId = req.userId;
-  console.log("images", images);
 
   const errors = validationResult(req);
 
@@ -141,12 +140,104 @@ exports.putAddTrail = (req, res, next) => {
     });
 };
 
-// FETCHES SINGLE TRAIL FOR TRAIL DETAIL PAGE
+////// FETCHES SINGLE TRAIL FOR TRAIL DETAIL PAGE ///////////
 exports.getTrailDetail = async (req, res, next) => {
   const trailId = req.params.trailId;
   const trail = await Trail.findById(trailId);
 
   res.status(201).json({ message: "Trail found", trail: trail });
+};
+
+////// FETCHES SINGLE TRAIL FOR EDIT TRAIL PAGE ///////////
+exports.postfetchTrailEdit = async (req, res, next) => {
+  console.log("TRAIL EDIT REQUESTED");
+  const trailId = req.params.trailId;
+  const trail = await Trail.findById(trailId);
+
+  res.status(201).json({ message: "Trail found", trail: trail });
+};
+
+////// REPLACES OLD TRAIL DATA WITH NEW DATA ////////////
+exports.postEditTrail = (req, res, next) => {
+  const trailId = req.body.trailId;
+  const images = req.files;
+
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const error = new Error("Please Enter a valid product!");
+    error.statusCode = 422;
+    error.data = errors.array();
+    throw error;
+  }
+
+  const updatedSeasonArray = [+req.body.seasonStart, +req.body.seasonEnd];
+
+  const updatedTrailName = req.body.trailName;
+  const updatedState = req.body.state;
+  const updatedWildernessArea = req.body.wildernessArea;
+  const updatedTrailheadName = req.body.trailheadName;
+  const updatedLongitude = req.body.longitude;
+  const updatedLatitude = req.body.latitude;
+  const updatedMiles = req.body.miles;
+  const updatedScenery = req.body.scenery;
+  const updatedSolitude = req.body.solitude;
+  const updatedDifficulty = req.body.difficulty;
+  const updatedDescription = req.body.description;
+
+  // IF NEW IMAGES SENT, UPLOADS TO S3
+  const imageNameArray = [];
+  if (images) {
+    const randomImageName = (bytes = 32) =>
+      crypto.randomBytes(bytes).toString("hex");
+
+    images.forEach((image) => {
+      const imageName = randomImageName();
+      imageNameArray.push(imageName);
+
+      const params = {
+        Bucket: bucketName,
+        Key: imageName,
+        Body: image.buffer,
+        ContentType: image.mimetype,
+      };
+      const command = new PutObjectCommand(params);
+      s3.send(command);
+    });
+  }
+  const imageUrls = imageNameArray.map((image) => {
+    return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
+  });
+
+  // CHANGES TRAIL DATA IN MONGODB
+  Trail.findById(trailId)
+    .then((trail) => {
+      if (images.length !== 0) {
+        trail.images = imageUrls;
+      } else {
+        trail.images = trail.images;
+      }
+
+      trail.trailName = updatedTrailName;
+      trail.state = updatedState;
+      trail.wildernessArea = updatedWildernessArea;
+      //   trail.trailHeadName = updatedTrailHeadName;
+      trail.bestSeason = updatedSeasonArray;
+      trail.longitude = updatedLongitude;
+      trail.latitude = updatedLatitude;
+      trail.miles = updatedMiles;
+      trail.scenery = updatedScenery;
+      trail.solitude = updatedSolitude;
+      trail.difficulty = updatedDifficulty;
+      trail.description = updatedDescription;
+
+      return trail.save();
+    })
+    .then((result) => {
+      res.status(201).json({ message: "Trail edited successfully" });
+    })
+    .catch((err) => {
+      console.log(err);
+    });
 };
 
 // // CREATES AN ORDER
@@ -236,8 +327,6 @@ exports.getTrailDetail = async (req, res, next) => {
 //       console.log("ORDER NOT CREATED!", err);
 //     });
 // };
-
-
 
 // ADDS A NEW TRAIL
 // exports.putAddTrail = (req, res, next) => {

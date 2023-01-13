@@ -34,4 +34,24 @@ router.put(
   trailsController.putAddTrail
 );
 
+router.post(
+  "/edit-trail",
+  [
+    body("trailName").trim().not().isEmpty(),
+    body("state").trim().not().isEmpty(),
+    body("wildernessArea").trim().not().isEmpty(),
+    body("longitude").trim().isLength({ min: 1 }),
+    body("latitude").trim().isLength({ min: 1 }),
+    body("miles").trim().isLength({ min: 1 }),
+    body("scenery").trim().isLength({ min: 1 }),
+    body("solitude").trim().isLength({ min: 1 }),
+    body("difficulty").trim().isLength({ min: 1 }),
+    body("description").trim().isLength({ min: 10 }),
+  ],
+  isAuth,
+  trailsController.postEditTrail
+);
+
+router.post("/edit-trail/:trailId", isAuth, trailsController.postfetchTrailEdit);
+
 module.exports = router;

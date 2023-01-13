@@ -225,7 +225,7 @@ exports.postDeleteTrail = (req, res, next) => {
         deleteImage();
     })
     
-  // DELETES PRODUCT FROM MONGO
+  // DELETES TRAIL FROM MONGO
   Trail.findByIdAndRemove(trailId)
     .then((result) => {
       console.log(result);
