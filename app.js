@@ -5,12 +5,23 @@ const trailsRoutes = require("./routes/trails");
 const bodyParser = require("body-parser");
 const multer = require("multer");
 const helmet = require("helmet");
+const dotenv = require("dotenv");
+
+dotenv.config({ path: "./vars/.env" });
 
 const app = express();
 
-// const singleUpload = multer({ storage: storage }).single("file");
+const port = process.env.PORT || 8080;
 
-// const multipleUpload = multer({ storage: storage }).array("file");
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.log(error);
+    process.exit(1);
+  }
+};
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -38,14 +49,10 @@ app.use((error, req, res, next) => {
   res.status(status).json({ message: message });
 });
 
-mongoose
-  .connect(
-    `mongodb+srv://psychoticOwlEyes888:eyesWideShut123@cluster0.czn6dqq.mongodb.net/trail-tracker?retryWrites=true&w=majority`
-  )
-  .then((result) => {
-    console.log("CONNECTED TO MONGODB");
-    app.listen(8080);
-  })
-  .catch((error) => {
-    console.log(error);
-  });
+//Connects to the database before listening
+connectDB().then(() => {
+    app.listen(port, () => {
+        console.log("listening for requests");
+    })
+})
+

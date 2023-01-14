@@ -54,4 +54,11 @@ router.post(
 
 router.post("/edit-trail/:trailId", isAuth, trailsController.postfetchTrailEdit);
 
+router.post("/delete-trail", isAuth, trailsController.postDeleteTrail);
+
+router.get(
+  "/get-trail-weather",
+  trailsController.getTrailWeatherKey
+);
+
 module.exports = router;
