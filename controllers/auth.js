@@ -8,6 +8,7 @@ dotenv.config({ path: "./vars/.env" });
 
 // SECRET JWT PHRASE
 const secretPhrase = process.env.JWT_SECRET_PHRASE;
+const adminPassword = process.env.ADMIN_PASSWORD
 
 const User = require("../models/user");
 
@@ -76,7 +77,7 @@ exports.login = (req, res, next) => {
       }
 
       // CHECK IF USER IS ADMIN
-      if (isEqual && email === "brd9326@protonmail.com") {
+      if (isEqual && email === adminPassword) {
         const token = jwt.sign(
           {
             email: loadedUser.email,
@@ -130,6 +131,11 @@ exports.postFetchAuth = (req, res, next) => {
   }
   User.findById(userId)
     .then((user) => {
+        if (!user) {
+          const error = new Error("Could not find User!");
+          error.status = 400;
+          throw error;
+        }
       const favorites = user.favorites;
       const userName = user.userName;
 
@@ -139,7 +145,9 @@ exports.postFetchAuth = (req, res, next) => {
         userName: userName,
       });
     })
-    .catch((err) => {});
+    .catch((err) => {
+      console.log(err)
+    });
 };
 
 ////// UPDATES USER'S FAVORITES ARRAY IN MONGODB ///////
@@ -167,11 +175,15 @@ exports.putUpdateAuth = (req, res, next) => {
 
 ////// FETCHES USER'S SUBMITTED TRAILS FOR ACCOUNT PAGE
 exports.postFetchUserTrails = (req, res, next) => {
-  console.log("User Submitted Trails");
   const userId = req.userId;
   User.findById(userId)
     .populate("submittedTrails")
     .exec((err, user) => {
+        if (!user) {
+          const error = new Error("Could not find User!");
+          error.status = 400;
+          throw error;
+        }
       res.status(200).json({ submittedTrails: user.submittedTrails });
-    });
+    })
 };

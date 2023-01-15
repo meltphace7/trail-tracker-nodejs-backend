@@ -5,6 +5,7 @@ dotenv.config({ path: "./vars/.env" });
 
 // SECRET JWT PHRASE
 const secretPhrase = process.env.JWT_SECRET_PHRASE;
+const adminId = process.env.ADMIN_ID;
 
 module.exports = (req, res, next) => {
   const authHeader = req.get("Authorization");
@@ -28,7 +29,7 @@ module.exports = (req, res, next) => {
     throw error;
   }
   req.userId = decodedToken.userId;
-  if (req.userId === "637ef5b2e23c658abc643ef4") {
+  if (req.userId === adminId) {
     req.isAdmin = true;
   }
   next();

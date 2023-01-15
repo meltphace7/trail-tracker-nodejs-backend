@@ -5,7 +5,6 @@ const {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
-  GetObjectCommand,
 } = require("@aws-sdk/client-s3");
 const crypto = require("crypto");
 const dotenv = require("dotenv");
@@ -31,6 +30,12 @@ const s3 = new S3Client({
 ////// FETCHES ALL TRAILS FROM MONGODB /////////////
 exports.getTrails = async (req, res, next) => {
   const trails = await Trail.find();
+
+  if (trails) {
+    const error = new Error("Could not find trails!");
+    error.statusCode = 404;
+    throw error;
+  }
   // Loop through products and create a imageURL based on the imageName
   for (const trail of trails) {
     trail.imageURLs = [];
@@ -46,13 +51,14 @@ exports.getTrails = async (req, res, next) => {
 exports.getTrailDetail = async (req, res, next) => {
   const trailId = req.params.trailId;
   const trail = await Trail.findById(trailId);
-
+  if (!trail) {
+    throw new Error('Could not find trail!')
+  }
   res.status(201).json({ message: "Trail found", trail: trail });
 };
 
 ////// ADDS A NEW TRAIL TO MONGODB /////////////////////
 exports.putAddTrail = (req, res, next) => {
-  console.log("Trail submission received!");
   const images = req.files;
   const userId = req.userId;
 
@@ -151,7 +157,6 @@ exports.getTrailDetail = async (req, res, next) => {
 
 ////// FETCHES SINGLE TRAIL FOR EDIT TRAIL PAGE ///////////
 exports.postfetchTrailEdit = async (req, res, next) => {
-  console.log("TRAIL EDIT REQUESTED");
   const trailId = req.params.trailId;
   const trail = await Trail.findById(trailId);
 
