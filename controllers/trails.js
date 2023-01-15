@@ -31,11 +31,6 @@ const s3 = new S3Client({
 exports.getTrails = async (req, res, next) => {
   const trails = await Trail.find();
 
-  if (trails) {
-    const error = new Error("Could not find trails!");
-    error.statusCode = 404;
-    throw error;
-  }
   // Loop through products and create a imageURL based on the imageName
   for (const trail of trails) {
     trail.imageURLs = [];
@@ -170,7 +165,7 @@ exports.postEditTrail = (req, res, next) => {
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    const error = new Error("Please Enter a valid product!");
+    const error = new Error("Please enter  valid trail data!");
     error.statusCode = 422;
     error.data = errors.array();
     throw error;

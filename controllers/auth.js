@@ -132,7 +132,7 @@ exports.postFetchAuth = (req, res, next) => {
   User.findById(userId)
     .then((user) => {
         if (!user) {
-          const error = new Error("Could not find User!");
+          const error = new Error("Could not find user!");
           error.status = 400;
           throw error;
         }
@@ -158,7 +158,7 @@ exports.putUpdateAuth = (req, res, next) => {
   User.findById(userId)
     .then((user) => {
       if (!user) {
-        const error = new Error("Could not find User!");
+        const error = new Error("Could not find user!");
         error.status = 400;
         throw error;
       }
@@ -180,7 +180,7 @@ exports.postFetchUserTrails = (req, res, next) => {
     .populate("submittedTrails")
     .exec((err, user) => {
         if (!user) {
-          const error = new Error("Could not find User!");
+          const error = new Error("Could not find user!");
           error.status = 400;
           throw error;
         }
