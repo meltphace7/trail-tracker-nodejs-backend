@@ -60,12 +60,13 @@ exports.putAddTrail = (req, res, next) => {
   const errors = validationResult(req);
 
   if (!errors.isEmpty()) {
-    const error = new Error(
-      "Validation failed!  Please enter valid trail data"
-    );
-    error.statusCode = 422;
-    error.data = errors.array();
-    throw error;
+    throw new Error('Problem submitting trail!')
+    // const error = new Error(
+    //   "Validation failed!  Please enter valid trail data"
+    // );
+    // error.statusCode = 422;
+    // error.data = errors.array();
+    // throw error;
   }
 
   User.findById(userId)
