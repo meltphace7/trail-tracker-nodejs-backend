@@ -62,12 +62,6 @@ exports.putAddTrail = (req, res, next) => {
 
   if (!errors.isEmpty()) {
     throw new Error('Problem submitting trail!')
-    // const error = new Error(
-    //   "Validation failed!  Please enter valid trail data"
-    // );
-    // error.statusCode = 422;
-    // error.data = errors.array();
-    // throw error;
   }
 
   User.findById(userId)
@@ -160,14 +154,20 @@ exports.getTrailDetail = async (req, res, next) => {
 
 ////// FETCHES SINGLE TRAIL FOR EDIT TRAIL PAGE ///////////
 exports.postfetchTrailEdit = async (req, res, next) => {
-  const trailId = req.params.trailId;
+ try { const trailId = req.params.trailId;
   const trail = await Trail.findById(trailId);
+  if (!trail) {
+    throw new Error('Could not find trail!')
+  }
 
-  res.status(201).json({ message: "Trail found", trail: trail });
+   res.status(201).json({ message: "Trail found", trail: trail });
+ } catch (err) {
+   console.log(err)
+ }
 };
 
 ////// EDITS/REPLACES OLD TRAIL DATA WITH NEW DATA ////////////
-exports.postEditTrail = (req, res, next) => {
+exports.putEditTrail = (req, res, next) => {
   const trailId = req.body.trailId;
   const images = req.files;
 
@@ -236,7 +236,7 @@ exports.postEditTrail = (req, res, next) => {
       trail.trailName = updatedTrailName;
       trail.state = updatedState;
       trail.wildernessArea = updatedWildernessArea;
-      //   trail.trailHeadName = updatedTrailHeadName;
+      trail.trailheadName = updatedTrailheadName;
       trail.bestSeason = updatedSeasonArray;
       trail.longitude = updatedLongitude;
       trail.latitude = updatedLatitude;

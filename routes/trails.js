@@ -34,7 +34,7 @@ router.put(
   trailsController.putAddTrail
 );
 
-router.post(
+router.put(
   "/edit-trail",
   [
     body("trailName").trim().not().isEmpty(),
@@ -49,7 +49,7 @@ router.post(
     body("description").trim().isLength({ min: 10 }),
   ],
   isAuth,
-  trailsController.postEditTrail
+  trailsController.putEditTrail
 );
 
 router.post("/edit-trail/:trailId", isAuth, trailsController.postfetchTrailEdit);
