@@ -8,6 +8,7 @@ const {
 } = require("@aws-sdk/client-s3");
 const crypto = require("crypto");
 const dotenv = require("dotenv");
+const sharp = require("sharp");
 
 dotenv.config({ path: "./vars/.env" });
 
@@ -80,6 +81,9 @@ exports.putAddTrail = (req, res, next) => {
         const imageName = randomImageName();
         imageNameArray.push(imageName);
 
+        //// RESIZE IMAGE WITH SHARP
+        // const buffer = await sharp(image.buffer).resize({width: 1500, height: null, fit: "contain"}).toBuffer()
+        ///////
         const params = {
           Bucket: bucketName,
           Key: imageName,

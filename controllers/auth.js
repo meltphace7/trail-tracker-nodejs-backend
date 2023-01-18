@@ -85,7 +85,7 @@ exports.login = (req, res, next) => {
             isAdmin: true,
           },
           secretPhrase,
-          { expiresIn: "1h" }
+          { expiresIn: "10s" }
         );
         res.status(200).json({
           token: token,
@@ -102,7 +102,7 @@ exports.login = (req, res, next) => {
             userId: loadedUser._id.toString(),
           },
           secretPhrase,
-          { expiresIn: "1h" }
+          { expiresIn: "10s" }
         );
 
         res.status(200).json({
