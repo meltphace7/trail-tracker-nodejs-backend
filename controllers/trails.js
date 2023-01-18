@@ -82,16 +82,18 @@ exports.putAddTrail = (req, res, next) => {
         imageNameArray.push(imageName);
 
         //// RESIZE IMAGE WITH SHARP
-        // const buffer = await sharp(image.buffer).resize({width: 1500, height: null, fit: "contain"}).toBuffer()
+        sharp(image.buffer).resize({ width: 1800, height: null, fit: "contain" }).toBuffer()
+          .then(buffer => {
+           const params = {
+             Bucket: bucketName,
+             Key: imageName,
+             Body: buffer,
+             ContentType: image.mimetype,
+           };
+           const command = new PutObjectCommand(params);
+           s3.send(command);
+        })
         ///////
-        const params = {
-          Bucket: bucketName,
-          Key: imageName,
-          Body: image.buffer,
-          ContentType: image.mimetype,
-        };
-        const command = new PutObjectCommand(params);
-        s3.send(command);
       });
 
       const imageUrls = imageNameArray.map((image) => {
@@ -136,6 +138,7 @@ exports.putAddTrail = (req, res, next) => {
       user.submittedTrails.push(newTrail._id);
       return user.save();
     })
+    // afterUser
     .then((result) => {
       res.status(201).json({ message: "You trail was added!" });
     })
@@ -200,14 +203,21 @@ exports.postEditTrail = (req, res, next) => {
       const imageName = randomImageName();
       imageNameArray.push(imageName);
 
-      const params = {
-        Bucket: bucketName,
-        Key: imageName,
-        Body: image.buffer,
-        ContentType: image.mimetype,
-      };
-      const command = new PutObjectCommand(params);
-      s3.send(command);
+      //// RESIZE IMAGE WITH SHARP
+      sharp(image.buffer)
+        .resize({ width: 1800, height: null, fit: "contain" })
+        .toBuffer()
+        .then((buffer) => {
+          const params = {
+            Bucket: bucketName,
+            Key: imageName,
+            Body: buffer,
+            ContentType: image.mimetype,
+          };
+          const command = new PutObjectCommand(params);
+          s3.send(command);
+        });
+      ///////
     });
   }
   const imageUrls = imageNameArray.map((image) => {
