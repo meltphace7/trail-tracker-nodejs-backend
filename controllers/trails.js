@@ -57,12 +57,21 @@ exports.getTrailDetail = async (req, res, next) => {
 exports.putAddTrail = (req, res, next) => {
   const images = req.files;
   const userId = req.userId;
+  console.log('IMAGES', images)
 
   const errors = validationResult(req);
 
-  if (!errors.isEmpty()) {
-    throw new Error('Problem submitting trail!')
-  }
+    // if (!errors.isEmpty()) {
+    //   const error = new Error("Validation failed, entered data is incorrect.");
+    //   error.statusCode = 422;
+    //   throw error;
+    // }
+
+    if (!images) {
+      const error = new Error("No image provided.");
+      error.statusCode = 422;
+      throw error;
+    }
 
   User.findById(userId)
     .then((user) => {
