@@ -47,6 +47,7 @@ exports.getTrailDetail = async (req, res, next) => {
 
 ////// ADDS A NEW TRAIL TO MONGODB /////////////////////
 exports.putAddTrail = async (req, res, next) => {
+   console.log("images", req.files);
   const images = req.files;
   const userId = req.userId;
   console.log('NEW TRAIL ADDED')
@@ -175,7 +176,6 @@ exports.postfetchTrailEdit = async (req, res, next) => {
 
 ////// EDITS/REPLACES OLD TRAIL DATA WITH NEW DATA ////////////
 exports.putEditTrail = async (req, res, next) => {
-  console.log('EDIT TRAIL')
    try {
      const trailId = req.body.trailId;
      const images = req.files;
