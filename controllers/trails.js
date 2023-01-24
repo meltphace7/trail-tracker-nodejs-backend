@@ -32,14 +32,6 @@ const s3 = new S3Client({
 exports.getTrails = async (req, res, next) => {
   const trails = await Trail.find();
 
-  // Loop through products and create a imageURL based on the imageName
-  for (const trail of trails) {
-    trail.imageURLs = [];
-    trail.images.forEach((image) => {
-      const imageUrl = `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
-    });
-  }
-
   res.status(201).json({ message: "Trails Fetched!", trails: trails });
 };
 
@@ -54,13 +46,13 @@ exports.getTrailDetail = async (req, res, next) => {
 };
 
 ////// ADDS A NEW TRAIL TO MONGODB /////////////////////
-exports.putAddTrail = (req, res, next) => {
+exports.putAddTrail = async (req, res, next) => {
   const images = req.files;
   const userId = req.userId;
-  console.log('IMAGES', images)
+  console.log('NEW TRAIL ADDED')
 
   const errors = validationResult(req);
-
+  try {
     if (!errors.isEmpty()) {
       const error = new Error("Validation failed, entered data is incorrect.");
       error.statusCode = 422;
@@ -73,90 +65,89 @@ exports.putAddTrail = (req, res, next) => {
       throw error;
     }
 
-  User.findById(userId)
-    .then((user) => {
-       if (!user) {
-         const error = new Error("Could not find user!");
-         error.statusCode = 422;
-         throw error;
-       }
-      //// S3 IMAGES
-      const randomImageName = (bytes = 32) =>
-        crypto.randomBytes(bytes).toString("hex");
+    const user = await User.findById(userId)
+  
+    if (!user) {
+      const error = new Error("Could not find user!");
+      error.statusCode = 422;
+      throw error;
+    }
+    //// S3 IMAGES
+    const randomImageName = (bytes = 32) =>
+      crypto.randomBytes(bytes).toString("hex");
 
-      const imageNameArray = [];
-      images.forEach((image) => {
-        const imageName = randomImageName();
-        imageNameArray.push(imageName);
+    const imageNameArray = [];
+    await images.forEach((image) => {
+      const imageName = randomImageName();
+      imageNameArray.push(imageName);
 
-        //// RESIZE IMAGE WITH SHARP
-        sharp(image.buffer).resize({ width: 1800, height: null, fit: "contain" }).toBuffer()
-          .then(buffer => {
-           const params = {
-             Bucket: bucketName,
-             Key: imageName,
-             Body: buffer,
-             ContentType: image.mimetype,
-           };
-           const command = new PutObjectCommand(params);
-           s3.send(command);
+      //// RESIZE IMAGE WITH SHARP
+      sharp(image.buffer).resize({ width: 1800, height: null, fit: "contain" }).toBuffer()
+        .then(buffer => {
+          const params = {
+            Bucket: bucketName,
+            Key: imageName,
+            Body: buffer,
+            ContentType: image.mimetype,
+          };
+          const command = new PutObjectCommand(params);
+          s3.send(command);
         })
-        ///////
-      });
+      ///////
+    });
 
-      const imageUrls = imageNameArray.map((image) => {
-        return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
-      });
+    const imageUrls = imageNameArray.map((image) => {
+      return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
+    });
 
-      const seasonArray = [+req.body.seasonStart, +req.body.seasonEnd];
+    const seasonArray = [+req.body.seasonStart, +req.body.seasonEnd];
 
-      const trailName = req.body.trailName;
-      const state = req.body.state;
-      const wildernessArea = req.body.wildernessArea;
-      const trailheadName = req.body.trailheadName;
-      const bestSeason = seasonArray;
-      const longitude = req.body.longitude;
-      const latitude = req.body.latitude;
-      const miles = req.body.miles;
-      const scenery = req.body.scenery;
-      const solitude = req.body.solitude;
-      const difficulty = req.body.difficulty;
-      const description = req.body.description;
-      const author = req.body.author;
-      const authorId = req.body.authorId;
+    const trailName = req.body.trailName;
+    const state = req.body.state;
+    const wildernessArea = req.body.wildernessArea;
+    const trailheadName = req.body.trailheadName;
+    const bestSeason = seasonArray;
+    const longitude = req.body.longitude;
+    const latitude = req.body.latitude;
+    const miles = req.body.miles;
+    const scenery = req.body.scenery;
+    const solitude = req.body.solitude;
+    const difficulty = req.body.difficulty;
+    const description = req.body.description;
+    const author = req.body.author;
+    const authorId = req.body.authorId;
 
-      const newTrail = new Trail({
-        trailName,
-        state,
-        wildernessArea,
-        trailheadName,
-        bestSeason,
-        longitude,
-        latitude,
-        miles,
-        scenery,
-        solitude,
-        difficulty,
-        description,
-        author,
-        authorId,
-        images: imageUrls,
-      });
-      newTrail.save();
-      user.submittedTrails.push(newTrail._id);
-      return user.save();
-    })
+    const newTrail = new Trail({
+      trailName,
+      state,
+      wildernessArea,
+      trailheadName,
+      bestSeason,
+      longitude,
+      latitude,
+      miles,
+      scenery,
+      solitude,
+      difficulty,
+      description,
+      author,
+      authorId,
+      images: imageUrls,
+    });
+    await newTrail.save();
+    user.submittedTrails.push(newTrail._id);
+    await user.save();
     // afterUser
-    .then((result) => {
-      res.status(201).json({ message: "You trail was added!" });
-    })
-    .catch((err) => {
+   
+    res.status(201).json({ message: "You trail was added!" });
+
+  } catch (err) {
       if (!err.statusCode) {
         err.statusCode = 500;
       }
-      console.log(err);
-      next(err);
-    });
+    next()
+  }
+ 
 };
 
 ////// FETCHES SINGLE TRAIL FOR TRAIL DETAIL PAGE ///////////
@@ -304,3 +295,116 @@ exports.postDeleteTrail = (req, res, next) => {
 exports.getTrailWeatherKey = (req, res, next) => {
   res.status(201).json({ openWeatherKey: openWeatherKey });
 };
+
+
+
+
+/////////////////////////////// old code
+
+
+// exports.putAddTrail = (req, res, next) => {
+//   const images = req.files;
+//   const userId = req.userId;
+//   console.log("IMAGES", images);
+
+//   const errors = validationResult(req);
+
+//   if (!errors.isEmpty()) {
+//     const error = new Error("Validation failed, entered data is incorrect.");
+//     error.statusCode = 422;
+//     throw error;
+//   }
+
+//   if (!images) {
+//     const error = new Error("No image provided.");
+//     error.statusCode = 422;
+//     throw error;
+//   }
+
+//   User.findById(userId)
+//     .then((user) => {
+//       if (!user) {
+//         const error = new Error("Could not find user!");
+//         error.statusCode = 422;
+//         throw error;
+//       }
+//       //// S3 IMAGES
+//       const randomImageName = (bytes = 32) =>
+//         crypto.randomBytes(bytes).toString("hex");
+
+//       const imageNameArray = [];
+//       images.forEach((image) => {
+//         const imageName = randomImageName();
+//         imageNameArray.push(imageName);
+
+//         //// RESIZE IMAGE WITH SHARP
+//         sharp(image.buffer)
+//           .resize({ width: 1800, height: null, fit: "contain" })
+//           .toBuffer()
+//           .then((buffer) => {
+//             const params = {
+//               Bucket: bucketName,
+//               Key: imageName,
+//               Body: buffer,
+//               ContentType: image.mimetype,
+//             };
+//             const command = new PutObjectCommand(params);
+//             s3.send(command);
+//           });
+//         ///////
+//       });
+
+//       const imageUrls = imageNameArray.map((image) => {
+//         return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
+//       });
+
+//       const seasonArray = [+req.body.seasonStart, +req.body.seasonEnd];
+
+//       const trailName = req.body.trailName;
+//       const state = req.body.state;
+//       const wildernessArea = req.body.wildernessArea;
+//       const trailheadName = req.body.trailheadName;
+//       const bestSeason = seasonArray;
+//       const longitude = req.body.longitude;
+//       const latitude = req.body.latitude;
+//       const miles = req.body.miles;
+//       const scenery = req.body.scenery;
+//       const solitude = req.body.solitude;
+//       const difficulty = req.body.difficulty;
+//       const description = req.body.description;
+//       const author = req.body.author;
+//       const authorId = req.body.authorId;
+
+//       const newTrail = new Trail({
+//         trailName,
+//         state,
+//         wildernessArea,
+//         trailheadName,
+//         bestSeason,
+//         longitude,
+//         latitude,
+//         miles,
+//         scenery,
+//         solitude,
+//         difficulty,
+//         description,
+//         author,
+//         authorId,
+//         images: imageUrls,
+//       });
+//       newTrail.save();
+//       user.submittedTrails.push(newTrail._id);
+//       return user.save();
+//     })
+//     // afterUser
+//     .then((result) => {
+//       res.status(201).json({ message: "You trail was added!" });
+//     })
+//     .catch((err) => {
+//       if (!err.statusCode) {
+//         err.statusCode = 500;
+//       }
+//       console.log(err);
+//       next(err);
+//     });
+// };
