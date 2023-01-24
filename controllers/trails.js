@@ -49,7 +49,7 @@ exports.getTrailDetail = async (req, res, next) => {
   const trail = await Trail.findById(trailId);
   if (!trail) {
     throw new Error('Could not find trail!')
-  }
+  } 
   res.status(201).json({ message: "Trail found", trail: trail });
 };
 
@@ -61,11 +61,11 @@ exports.putAddTrail = (req, res, next) => {
 
   const errors = validationResult(req);
 
-    // if (!errors.isEmpty()) {
-    //   const error = new Error("Validation failed, entered data is incorrect.");
-    //   error.statusCode = 422;
-    //   throw error;
-    // }
+    if (!errors.isEmpty()) {
+      const error = new Error("Validation failed, entered data is incorrect.");
+      error.statusCode = 422;
+      throw error;
+    }
 
     if (!images) {
       const error = new Error("No image provided.");
@@ -75,6 +75,11 @@ exports.putAddTrail = (req, res, next) => {
 
   User.findById(userId)
     .then((user) => {
+       if (!user) {
+         const error = new Error("Could not find user!");
+         error.statusCode = 422;
+         throw error;
+       }
       //// S3 IMAGES
       const randomImageName = (bytes = 32) =>
         crypto.randomBytes(bytes).toString("hex");
@@ -149,6 +154,7 @@ exports.putAddTrail = (req, res, next) => {
       if (!err.statusCode) {
         err.statusCode = 500;
       }
+      console.log(err);
       next(err);
     });
 };
