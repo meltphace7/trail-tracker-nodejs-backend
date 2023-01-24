@@ -77,12 +77,13 @@ exports.putAddTrail = async (req, res, next) => {
       crypto.randomBytes(bytes).toString("hex");
 
     const imageNameArray = [];
-    await images.forEach((image) => {
+
+    await Promise.all(images.map((image) => {
       const imageName = randomImageName();
       imageNameArray.push(imageName);
 
       //// RESIZE IMAGE WITH SHARP
-      sharp(image.buffer).resize({ width: 1800, height: null, fit: "contain" }).toBuffer()
+      return sharp(image.buffer).resize({ width: 1800, height: null, fit: "contain" }).toBuffer()
         .then(buffer => {
           const params = {
             Bucket: bucketName,
@@ -91,10 +92,10 @@ exports.putAddTrail = async (req, res, next) => {
             ContentType: image.mimetype,
           };
           const command = new PutObjectCommand(params);
-          s3.send(command);
+          return s3.send(command);
         })
       ///////
-    });
+    }));
 
     const imageUrls = imageNameArray.map((image) => {
       return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
@@ -206,27 +207,29 @@ exports.putEditTrail = async (req, res, next) => {
      if (images) {
        const randomImageName = (bytes = 32) =>
          crypto.randomBytes(bytes).toString("hex");
+       
+        await Promise.all(
+          images.map((image) => {
+            const imageName = randomImageName();
+            imageNameArray.push(imageName);
 
-       await images.forEach((image) => {
-         const imageName = randomImageName();
-         imageNameArray.push(imageName);
-
-         //// RESIZE IMAGE WITH SHARP
-         sharp(image.buffer)
-           .resize({ width: 1800, height: null, fit: "contain" })
-           .toBuffer()
-           .then((buffer) => {
-             const params = {
-               Bucket: bucketName,
-               Key: imageName,
-               Body: buffer,
-               ContentType: image.mimetype,
-             };
-             const command = new PutObjectCommand(params);
-             s3.send(command);
-           });
-         ///////
-       });
+            //// RESIZE IMAGE WITH SHARP
+            return sharp(image.buffer)
+              .resize({ width: 1800, height: null, fit: "contain" })
+              .toBuffer()
+              .then((buffer) => {
+                const params = {
+                  Bucket: bucketName,
+                  Key: imageName,
+                  Body: buffer,
+                  ContentType: image.mimetype,
+                };
+                const command = new PutObjectCommand(params);
+                return s3.send(command);
+              });
+            ///////
+          })
+        );
      }
      const imageUrls = imageNameArray.map((image) => {
        return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
@@ -297,176 +300,3 @@ exports.postDeleteTrail = (req, res, next) => {
 exports.getTrailWeatherKey = (req, res, next) => {
   res.status(201).json({ openWeatherKey: openWeatherKey });
 };
-
-
-
-
-/////////////////////////////// old code
-
-
-// exports.putAddTrail = (req, res, next) => {
-//   const images = req.files;
-//   const userId = req.userId;
-//   console.log("IMAGES", images);
-
-//   const errors = validationResult(req);
-
-//   if (!errors.isEmpty()) {
-//     const error = new Error("Validation failed, entered data is incorrect.");
-//     error.statusCode = 422;
-//     throw error;
-//   }
-
-//   if (!images) {
-//     const error = new Error("No image provided.");
-//     error.statusCode = 422;
-//     throw error;
-//   }
-
-//   User.findById(userId)
-//     .then((user) => {
-//       if (!user) {
-//         const error = new Error("Could not find user!");
-//         error.statusCode = 422;
-//         throw error;
-//       }
-//       //// S3 IMAGES
-//       const randomImageName = (bytes = 32) =>
-//         crypto.randomBytes(bytes).toString("hex");
-
-//       const imageNameArray = [];
-//       images.forEach((image) => {
-//         const imageName = randomImageName();
-//         imageNameArray.push(imageName);
-
-//         //// RESIZE IMAGE WITH SHARP
-//         sharp(image.buffer)
-//           .resize({ width: 1800, height: null, fit: "contain" })
-//           .toBuffer()
-//           .then((buffer) => {
-//             const params = {
-//               Bucket: bucketName,
-//               Key: imageName,
-//               Body: buffer,
-//               ContentType: image.mimetype,
-//             };
-//             const command = new PutObjectCommand(params);
-//             s3.send(command);
-//           });
-//         ///////
-//       });
-
-//       const imageUrls = imageNameArray.map((image) => {
-//         return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
-//       });
-
-//       const seasonArray = [+req.body.seasonStart, +req.body.seasonEnd];
-
-//       const trailName = req.body.trailName;
-//       const state = req.body.state;
-//       const wildernessArea = req.body.wildernessArea;
-//       const trailheadName = req.body.trailheadName;
-//       const bestSeason = seasonArray;
-//       const longitude = req.body.longitude;
-//       const latitude = req.body.latitude;
-//       const miles = req.body.miles;
-//       const scenery = req.body.scenery;
-//       const solitude = req.body.solitude;
-//       const difficulty = req.body.difficulty;
-//       const description = req.body.description;
-//       const author = req.body.author;
-//       const authorId = req.body.authorId;
-
-//       const newTrail = new Trail({
-//         trailName,
-//         state,
-//         wildernessArea,
-//         trailheadName,
-//         bestSeason,
-//         longitude,
-//         latitude,
-//         miles,
-//         scenery,
-//         solitude,
-//         difficulty,
-//         description,
-//         author,
-//         authorId,
-//         images: imageUrls,
-//       });
-//       newTrail.save();
-//       user.submittedTrails.push(newTrail._id);
-//       return user.save();
-//     })
-//     // afterUser
-//     .then((result) => {
-//       res.status(201).json({ message: "You trail was added!" });
-//     })
-//     .catch((err) => {
-//       if (!err.statusCode) {
-//         err.statusCode = 500;
-//       }
-//       console.log(err);
-//       next(err);
-//     });
-// };
-
-
-////edit trail
-
-// exports.putEditTrail = (req, res, next) => {
-//   const trailId = req.body.trailId;
-//   const images = req.files;
-
-//   const errors = validationResult(req);
-//   if (!errors.isEmpty()) {
-//     const error = new Error("Please enter  valid trail data!");
-//     error.statusCode = 422;
-//     error.data = errors.array();
-//     throw error;
-//   }
-
-//   const updatedSeasonArray = [+req.body.seasonStart, +req.body.seasonEnd];
-
-//   const updatedTrailName = req.body.trailName;
-//   const updatedState = req.body.state;
-//   const updatedWildernessArea = req.body.wildernessArea;
-//   const updatedTrailheadName = req.body.trailheadName;
-//   const updatedLongitude = req.body.longitude;
-//   const updatedLatitude = req.body.latitude;
-//   const updatedMiles = req.body.miles;
-//   const updatedScenery = req.body.scenery;
-//   const updatedSolitude = req.body.solitude;
-//   const updatedDifficulty = req.body.difficulty;
-//   const updatedDescription = req.body.description;
-
-//   // IF NEW IMAGES SENT, UPLOADS TO S3
-//   const imageNameArray = [];
-//   if (images) {
-//     const randomImageName = (bytes = 32) =>
-//       crypto.randomBytes(bytes).toString("hex");
-
-//     images.forEach((image) => {
-//       const imageName = randomImageName();
-//       imageNameArray.push(imageName);
-
-//       //// RESIZE IMAGE WITH SHARP
-//       sharp(image.buffer)
-//         .resize({ width: 1800, height: null, fit: "contain" })
-//         .toBuffer()
-//         .then((buffer) => {
-//           const params = {
-//             Bucket: bucketName,
-//             Key: imageName,
-//             Body: buffer,
-//             ContentType: image.mimetype,
-//           };
-//           const command = new PutObjectCommand(params);
-//           s3.send(command);
-//         });
-//       ///////
-//     });
-//   }
-//   const imageUrls = imageNameArray.map((image) => {
-//     return `https://trail-tracker-image-bucket.s3.us-west-2.amazonaws.com/${image}`;
-//   });
