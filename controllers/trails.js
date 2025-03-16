@@ -17,8 +17,7 @@ const bucketRegion = process.env.BUCKET_REGION;
 const accessKey = process.env.ACCESS_KEY;
 const secretAccessKey = process.env.SECRET_ACCESS_KEY;
 const pirateWeatherKey = process.env.PIRATEWEATHER_KEY;
-// const openWeatherKey = process.env.OPENWEATHER_KEY;
-// const openWeatherKey2 = process.env.OPENWEATHER_KEY_2;
+
 
 // CONFIGURES s3 object so the image can be stored
 const s3 = new S3Client({
